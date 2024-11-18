@@ -17,7 +17,12 @@ macro_rules! print {
 #[macro_export]
 macro_rules! println {
     () => { $crate::print!("\n") };
-    ($($arg:tt)*) => {
-        $crate::io::__print_impl(format_args!("{}\n", format_args!($($arg)*)));
+    // ($($arg:tt)*) => {
+    //     $crate::io::__print_impl(format_args!("{}\n", format_args!($($arg)*)));
+    // }
+    ($($arg:tt)*) => { 
+        const PURPLE: &str = "\x1b[35m";
+        const RESET: &str = "\x1b[0m";
+        $crate::io::__print_impl(format_args!("{}{}{}", PURPLE, format_args!("{}\n", format_args!($($arg)*)), RESET));
     }
 }
