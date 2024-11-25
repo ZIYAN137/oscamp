@@ -1,6 +1,7 @@
 use std::fs::{self, File, FileType};
 use std::io::{self, prelude::*};
 use std::{string::String, vec::Vec};
+use axerrno::AxError;
 
 #[cfg(all(not(feature = "axstd"), unix))]
 use std::os::unix::fs::{FileTypeExt, PermissionsExt};
@@ -27,6 +28,8 @@ const CMD_TABLE: &[(&str, CmdHandler)] = &[
     ("pwd", do_pwd),
     ("rm", do_rm),
     ("uname", do_uname),
+    ("rename", do_rename),
+    ("mv", do_mv),
 ];
 
 fn file_type_to_char(ty: FileType) -> char {
@@ -270,6 +273,49 @@ fn do_help(_args: &str) {
 fn do_exit(_args: &str) {
     println!("Bye~");
     std::process::exit(0);
+}
+
+fn do_rename(args: &str) {
+    if args.is_empty() {
+        print_err!("rm", "missing operand");
+        return;
+    }
+    let (src, dst) = split_whitespace(args);
+    if dst.contains(char::is_whitespace) {
+        print_err!("rename", "too many arguments");
+        return;
+    }
+    if let Err(e) = fs::rename(src, dst) {
+        print_err!("rename", format_args!("cannot rename '{src}' to '{dst}'"), e);
+    }
+}
+
+fn do_mv(args: &str) {
+    // TODO: unimplemented
+    if args.is_empty() {
+        print_err!("mv", "missing operand");
+        return;
+    }
+    let (src, dst) = split_whitespace(args);
+    if dst.contains(char::is_whitespace) {
+        print_err!("mv", "too many arguments");
+        return;
+    }
+    
+    fn mv_one(src: &str, dst: &str) -> io::Result<()> {
+        if fs::metadata(dst)?.is_dir() {
+            let buf = fs::read(src)?;
+            let dst = format!("{}/{}", dst, src);
+            fs::write(&dst, buf);
+            fs::remove_file(src)
+        } else {
+            return Err(AxError::InvalidInput);
+        }
+    }
+
+    if let Err(e) = mv_one(src, dst) {
+        print_err!("mv", format_args!("cannot move '{src}' to '{dst}'"), e);
+    }
 }
 
 pub fn run_cmd(line: &[u8]) {
