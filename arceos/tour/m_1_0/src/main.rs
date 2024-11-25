@@ -71,7 +71,6 @@ fn init_user_stack(uspace: &mut AddrSpace, populating: bool) -> io::Result<VirtA
 #[register_trap_handler(PAGE_FAULT)]
 fn handle_page_fault(vaddr: VirtAddr, access_flags: MappingFlags, is_user: bool) -> bool {
     if is_user {
-        // TODO: unimplemented
         if !axtask::current().task_ext().aspace.lock().handle_page_fault(vaddr, access_flags) {
             ax_println!("Page fault at {:#x?}", vaddr);
             axtask::exit(-1);
